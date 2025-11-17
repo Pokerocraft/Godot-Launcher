@@ -20,7 +20,7 @@ public class Main {
     static List<GodotVersionInfo> versions = new ArrayList<>();
     static String latestVersion = "4.5.1 (Stable)";
     static String latest3Version = "3.6.2 (Stable)";
-    static String latestDevVersion = "4.6 (Dev3)";
+    static String latestDevVersion = "4.6 (Dev4)";
     static String latest3DevVersion = "3.7 (Dev1)";
     static String slashes = System.getProperty("file.separator");
     /**
@@ -48,7 +48,7 @@ public class Main {
         } catch (IOException e){
             System.err.println("Failed to make directory: " + e.getMessage());
         }
-        JOptionPane.showMessageDialog(frame, "I can't tell if you have .NET versions installed, but if you do, then I recommend making sure\nyou also have the standard edtion to be able to run it in the launcher. Elsewise they won't appear in the Launcher","Warning", JOptionPane.WARNING_MESSAGE);
+        JOptionPane.showMessageDialog(frame, "<html>Having no Stable Versions (Any file that doesn't have _mono in the filename) will crash the engine.<br>Also if you are using a custom engine, such as the Jenova Framework, please change the engine name to fit with the other Godot Versions, so that way my job is easier.<br>Also, in the event that you didn't read the repository description or have no idea what it means: <font color=red> YOU MUST DOWNLOAD YOUR OWN GODOT VERSIONS</font></html>","Info", JOptionPane.INFORMATION_MESSAGE); //Trust me, I don't want to make two more matchers to be able to use the Jenova Framework, renaming a file is easier than this stuff.
         System.out.println("Programs Path: " + programsPath.toString());
         String osName = System.getProperty("os.name");
         System.out.println("OS Name: " + osName);
@@ -57,7 +57,7 @@ public class Main {
         try{
             checkBox.setEnabled(hasMono.getFirst() == true);
         } catch (NoSuchElementException e){
-            JOptionPane.showMessageDialog(frame, "You likely only have .NET installations, which kinda also requires the Standard edition to run.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(frame, "You likely only have .NET installations, which requires the Stable version in order to run..", "Error", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
             System.exit(1);
         }
@@ -118,8 +118,13 @@ public class Main {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try{
-                    String fullPath;
-                    if (osName.contains("Linux")) {
+                    String fullPath = "";
+                    if (versions.get(comboBox.getSelectedIndex()).getVersionNumber().contains("Jenova Framework")) {
+                        if (osName.contains("Windows")) {
+                            fullPath = fileLocation + slashes + "godot.windows.editor.x86_64.exe";
+                        }
+                    }
+                    else if (osName.contains("Linux")) {
                         fullPath = fileLocation + slashes + versions.getFirst().getOriginalFilename() + ".x86_64";
                     } else {
                         if (isMonoInstalled(comboBox.getSelectedIndex()) && checkBox.isSelected()) {
@@ -143,7 +148,7 @@ public class Main {
                     Process process = processBuilder.start();
 
                     int exitCode = process.waitFor();
-                    System.out.println("Godot Engine closed with code " + exitCode);
+                    System.out.println("Godot Engine "+versions.get(comboBox.getSelectedIndex()).getVersionNumber()+" closed with code " + exitCode);
                 } catch (IOException | InterruptedException ex){
                     ex.printStackTrace();
                     JOptionPane.showMessageDialog(frame, "Whoops, there was an error opening Godot ;-;... \n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);

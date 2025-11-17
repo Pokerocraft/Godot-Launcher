@@ -11,8 +11,8 @@ public class GodotVersionInfo {
     private String osName = System.getProperty("os.name");
     private String versionType;
 
-    public static final Pattern WINDOWS_VERSION_PATTERN = Pattern.compile("Godot_v?((?:\\d+\\.\\d+(?:\\.\\d+)?)[-\\s]?(?:(?:stable|stable_mono)|(?:alpha|beta|rc|dev)\\d*)_?(?:mono)?)_win64");
-    public static final Pattern LINUX_VERSION_PATTERN = Pattern.compile("Godot_v?((?:\\d+\\.\\d+(?:\\.\\d+)?)[-\\s]?(?:(?:stable|stable_mono)|(?:alpha|beta|rc|dev)\\d*)_?(?:mono)?)_linux");
+    public static final Pattern WINDOWS_VERSION_PATTERN = Pattern.compile("Godot_v?((?:\\d+\\.\\d+(?:\\.\\d+)?)[-\\s]?(?:(?:stable|stable_mono|jenova)|(?:alpha|beta|rc|dev)\\d*)_?(?:mono)?)([_\\-])win64");
+    public static final Pattern LINUX_VERSION_PATTERN = Pattern.compile("Godot_v?((?:\\d+\\.\\d+(?:\\.\\d+)?)[-\\s]?(?:(?:stable|stable_mono|jenova)|(?:alpha|beta|rc|dev)\\d*)_?(?:mono)?)([_\\-])linux");
     /**
      * Constructor to get a specific file
      * @param filename The name of the file
@@ -50,6 +50,9 @@ public class GodotVersionInfo {
     public String getVersionNumber() {
         String start = versionType;
         String finish = start.substring(0, 1).toUpperCase() + start.substring(1);
+        if (finish.equals("Jenova")){
+            finish = "Jenova Framework";
+        }
         return versionNumber + " ("  + finish + ")";
     }
 
@@ -93,6 +96,8 @@ public class GodotVersionInfo {
             type = "Release Candidate Version";
         } else if (versionNumber.contains("stable") && !isDotNet) {
             type = "Stable Version";
+        } else if (versionNumber.contains("jenova")){
+            type = "Jenova Framework Edition";
         }
         if (isDotNet) {
             type += ".NET Version";
