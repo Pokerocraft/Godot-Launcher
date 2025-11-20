@@ -3,6 +3,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,6 +12,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * The Primary class, unsurprisingly, that handles all the Java Swing Stuff, and also all the versioning.
@@ -27,6 +32,27 @@ public class Main {
      * Average JFrame stuff, uses {@link #populateComboBox(JComboBox)} to make the comboBox work
      */
     public static void main(String[] args) {
+        boolean skip = false;
+        try{
+            String output = "";
+            File askingFile = new File("src/main/java/donutAskAgain.txt");
+            int i = 0;
+            Scanner myReader = new Scanner(askingFile);
+            String data;
+            for (myReader = new Scanner(askingFile); myReader.hasNextLine(); output=output.concat(data+"\n")){
+                data = "line output: " + myReader.nextLine();
+                System.out.println(data);
+            }
+            myReader.close();
+            if (output.contains("true")){
+                skip = true;
+            } else {
+                skip = false;
+            }
+        } catch (FileNotFoundException e){
+            System.err.println("An error occurred.");
+            e.printStackTrace();
+        }
         List<Boolean> hasMono = getMono();
         //Frame and Panel
         JPanel panel = new JPanel();
@@ -48,7 +74,15 @@ public class Main {
         } catch (IOException e){
             System.err.println("Failed to make directory: " + e.getMessage());
         }
-        JOptionPane.showMessageDialog(frame, "<html>Having no Stable Versions (Any file that doesn't have _mono in the filename) will crash the engine.<br>Also if you are using a custom engine, such as the Jenova Framework, please change the engine name to fit with the other Godot Versions, so that way my job is easier.<br>Also, in the event that you didn't read the repository description or have no idea what it means: <font color=red> YOU MUST DOWNLOAD YOUR OWN GODOT VERSIONS</font></html>","Info", JOptionPane.INFORMATION_MESSAGE); //Trust me, I don't want to make two more matchers to be able to use the Jenova Framework, renaming a file is easier than this stuff.
+        if (!skip) {
+            JOptionPane.showMessageDialog(frame, "<html>Having no Stable Versions (Any file that doesn't have _mono in the filename) will crash the engine.<br>Also if you are using a custom engine, such as the Jenova Framework, please change the engine name to fit with the other Godot Versions, so that way my job is easier.<br>Also, in the event that you didn't read the repository description or have no idea what it means: <font color=red> YOU MUST DOWNLOAD YOUR OWN GODOT VERSIONS</font></html>","Info", JOptionPane.INFORMATION_MESSAGE); //Trust me, I don't want to make two more matchers to be able to use the Jenova Framework, renaming a file is easier than this stuff.
+            Scanner myScanner = new  Scanner(System.in);
+            System.out.println("Do you wish to skip the info box?");
+            String result = myScanner.nextLine();
+            if (result.equalsIgnoreCase("yes")){
+                writeToFile(true);
+            }
+        }
         System.out.println("Programs Path: " + programsPath.toString());
         String osName = System.getProperty("os.name");
         System.out.println("OS Name: " + osName);
@@ -263,6 +297,16 @@ public class Main {
             System.err.println("Uh, so, this probably ran because the code didn't see GodotPrograms within " + System.getProperty("user.home") +". So just rerun it, it shouldn't give this error again");
         }
         return hasMono;
+    }
+
+    public static void writeToFile(boolean dontAsk){
+        try{
+            FileWriter myWriter = new FileWriter("src/main/java/donutAskAgain.txt");
+            myWriter.write(String.valueOf(dontAsk));
+            myWriter.close();
+        } catch (IOException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
 }
