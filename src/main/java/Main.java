@@ -25,7 +25,7 @@ public class Main {
     static List<GodotVersionInfo> versions = new ArrayList<>();
     static String latestVersion = "4.5.1 (Stable)";
     static String latest3Version = "3.6.2 (Stable)";
-    static String latestDevVersion = "4.6 (Dev4)";
+    static String latestDevVersion = "4.6 (Beta3)";
     static String latest3DevVersion = "3.7 (Dev1)";
     static String slashes = System.getProperty("file.separator");
     /**
