@@ -11,8 +11,8 @@ public class GodotVersionInfo {
     private String osName = System.getProperty("os.name");
     private String versionType;
 
-    public static final Pattern WINDOWS_VERSION_PATTERN = Pattern.compile("Godot_v?((?:\\d+\\.\\d+(?:\\.\\d+)?)[-\\s]?(?:(?:stable|stable_mono|jenova)|(?:alpha|beta|rc|dev)\\d*)_?(?:mono)?)([_\\-])win64");
-    public static final Pattern LINUX_VERSION_PATTERN = Pattern.compile("Godot_v?((?:\\d+\\.\\d+(?:\\.\\d+)?)[-\\s]?(?:(?:stable|stable_mono|jenova)|(?:alpha|beta|rc|dev)\\d*)_?(?:mono)?)([_\\-])linux");
+    public static final Pattern WINDOWS_VERSION_PATTERN = Pattern.compile("Godot_v?(\\d+(?:\\.\\d+)*)[-_\\s]?((?:stable|alpha|beta|rc|dev|jenova)[\\d_mono]*)_?[_\\-]win64");
+    public static final Pattern LINUX_VERSION_PATTERN = Pattern.compile("Godot_v?(\\d+(?:\\.\\d+)*)[-_\\s]?((?:stable|alpha|beta|rc|dev|jenova)[\\d_mono]*)_?[_\\-]linux");
     /**
      * Constructor to get a specific file
      * @param filename The name of the file
@@ -31,13 +31,10 @@ public class GodotVersionInfo {
         }
         if (matcher.find()) {
             this.versionNumber = matcher.group(1);
-            String[] versionParts = versionNumber.split("-");
-            if (versionParts.length > 1){
-             versionNumber = versionParts[0];
-             versionType = versionParts[1];
-            }
+            this.versionType = matcher.group(2);
         } else {
             this.versionNumber = "Unknown";
+            this.versionType = "Unknown";
         }
 
         this.isDotNet = filename.contains("_mono");
@@ -48,12 +45,14 @@ public class GodotVersionInfo {
      * @return Returns the version number of Godot, such as 4.5.1
      */
     public String getVersionNumber() {
-        String start = versionType;
-        String finish = start.substring(0, 1).toUpperCase() + start.substring(1);
-        if (finish.equals("Jenova")){
-            finish = "Jenova Framework";
+        if (versionNumber == null || versionType == null) {
+            return "Unknown";
         }
-        return versionNumber + " ("  + finish + ")";
+        String displayType = versionType.substring(0,1).toUpperCase() + versionType.substring(1);
+        if (displayType.equals("Jenova")){
+            displayType = "Jenova Framework";
+        }
+        return versionNumber + " ("  + displayType + ")";
     }
 
     /**

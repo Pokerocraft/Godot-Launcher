@@ -25,8 +25,11 @@ public class Main {
     static List<GodotVersionInfo> versions = new ArrayList<>();
     static String latestVersion = "4.5.1 (Stable)";
     static String latest3Version = "3.6.2 (Stable)";
-    static String latestDevVersion = "4.6 (Dev4)";
+    static String latestDevVersion = "4.6 (Rc2)";
     static String latest3DevVersion = "3.7 (Dev1)";
+    static String latest2Version = "2.1.6 (Stable)";
+    static String latest1Version = "1.1 (Stable)";
+    static String oldestVersion = "1.0 (Stable)";
     static String slashes = System.getProperty("file.separator");
     /**
      * Average JFrame stuff, uses {@link #populateComboBox(JComboBox)} to make the comboBox work
@@ -41,7 +44,6 @@ public class Main {
             String data;
             for (myReader = new Scanner(askingFile); myReader.hasNextLine(); output=output.concat(data+"\n")){
                 data = "line output: " + myReader.nextLine();
-                System.out.println(data);
             }
             myReader.close();
             if (output.contains("true")){
@@ -83,27 +85,35 @@ public class Main {
                 writeToFile(true);
             }
         }
-        System.out.println("Programs Path: " + programsPath.toString());
+        System.out.println("\n\n\nPrograms Path: " + programsPath.toString());
         String osName = System.getProperty("os.name");
         System.out.println("OS Name: " + osName);
         populateComboBox(comboBox);
+        for (int i=0; i < comboBox.getItemCount(); i++){
+            String itemText = comboBox.getItemAt(i);
+            if (itemText != null && itemText.contains(latestVersion)){
+                comboBox.setSelectedIndex(i);
+                break;
+            }
+        }
         checkBox.setSelected(false);
         try{
             checkBox.setEnabled(hasMono.getFirst() == true);
         } catch (NoSuchElementException e){
-            JOptionPane.showMessageDialog(frame, "You likely only have .NET installations, which requires the Stable version in order to run..", "Error", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
-            System.exit(1);
+            if (!versions.isEmpty()){
+                JOptionPane.showMessageDialog(frame, "You likely only have .NET installations, which requires the Stable version in order to run..", "Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
         if (versions.isEmpty()) {
-            JOptionPane.showMessageDialog(frame,"Ah, you don't have any installations of Godot.\nThis ain't the Minecraft launcher.\nSo go and install Godot, then put it in " + programsPath +".\nIf you have only .NET versions, that's because the launcher uses a Check Box to run the mono version, so it's best to add the Standard version as well", "Error", JOptionPane.ERROR_MESSAGE);
-//            System.out.println("Uhh, you don't have any installations of Godot, please install one before using this.\n" +
-//                    "This isn't the Minecraft Launcher after all");
-            System.exit(0);
+            JOptionPane.showMessageDialog(frame,"You... don't have any installations. ", "Error", JOptionPane.ERROR_MESSAGE);
+            comboBox.removeAllItems();
+            panel.remove(comboBox);
+            panel.revalidate();
+            panel.repaint();
         }
         JButton button = new JButton("Open this instance of Godot");
         fileLocation = directoryPath + slashes + versions.getFirst().getOriginalFilename();
-
+        JButton downloads = new  JButton("Download a Specific Godot Version");
 
         comboBox.addActionListener(new ActionListener() {
             @Override
@@ -144,7 +154,6 @@ public class Main {
                     fileLocation = directoryPath + slashes + versions.get(comboBox.getSelectedIndex()).getOriginalFilename();
                 }
 
-                System.out.println(checkBox.isSelected());
             }
         });
 
@@ -182,11 +191,17 @@ public class Main {
                     Process process = processBuilder.start();
 
                     int exitCode = process.waitFor();
-                    System.out.println("Godot Engine "+versions.get(comboBox.getSelectedIndex()).getVersionNumber()+" closed with code " + exitCode);
                 } catch (IOException | InterruptedException ex){
                     ex.printStackTrace();
                     JOptionPane.showMessageDialog(frame, "Whoops, there was an error opening Godot ;-;... \n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
+            }
+        });
+
+        downloads.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
             }
         });
 
@@ -197,6 +212,10 @@ public class Main {
         comboBox.setAlignmentX(Component.CENTER_ALIGNMENT);
         panel.add(checkBox);
         panel.add(button);
+        panel.add(downloads);
+        checkBox.setAlignmentX(Component.CENTER_ALIGNMENT);
+        button.setAlignmentX(Component.CENTER_ALIGNMENT);
+        downloads.setAlignmentX(Component.CENTER_ALIGNMENT);
         panel.setBackground(new Color(71,140,191));
         comboBox.setBackground(new Color(16, 184, 204));
 
@@ -234,6 +253,12 @@ public class Main {
                             comboBox.addItem("Godot " + versions.get(i).getVersionNumber() + " [Latest Dev Version]");
                         } else if (versions.get(i).getVersionNumber().equals(latest3DevVersion)){
                             comboBox.addItem("Godot " + versions.get(i).getVersionNumber() + " [Latest Godot 3 Dev Version]");
+                        }else if (versions.get(i).getVersionNumber().equals(latest2Version)){
+                            comboBox.addItem("Godot " + versions.get(i).getVersionNumber() + " [Latest Godot 2 Version]");
+                        } else if (versions.get(i).getVersionNumber().equals(latest1Version)){
+                            comboBox.addItem("Godot " +  versions.get(i).getVersionNumber() + " [Latest Godot 1 Version]");
+                        }else if (versions.get(i).getVersionNumber().equals(oldestVersion)){
+                            comboBox.addItem("Godot " + versions.get(i).getVersionNumber() + " [Blinded by Nostalgia I'm Guessing?]");
                         } else {
                             comboBox.addItem("Godot " + versions.get(i).getVersionNumber());
                         }
@@ -299,6 +324,10 @@ public class Main {
         return hasMono;
     }
 
+    /**
+     * Pretty much writes to a file called donutAskAgain.txt, it pretty much just saves if you decided to not want to see the popup about how you must download your own files
+     * @param dontAsk
+     */
     public static void writeToFile(boolean dontAsk){
         try{
             FileWriter myWriter = new FileWriter("src/main/java/donutAskAgain.txt");

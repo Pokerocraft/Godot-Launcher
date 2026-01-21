@@ -38,3 +38,6 @@ build/
 .DS_Store
 ### Launcher ###
 !**/src/main/java/donutAskAgain.txt
+/src/main/java/donutAskAgain.txt
+/out/artifacts/GodotLauncher_jar/GodotLauncher.jar
+/src/main/resources/META-INF/MANIFEST.MF
