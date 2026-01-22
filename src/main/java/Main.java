@@ -104,15 +104,17 @@ public class Main {
                 JOptionPane.showMessageDialog(frame, "You likely only have .NET installations, which requires the Stable version in order to run..", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
+        JButton button = new JButton("Open this instance of Godot");
+        if (!versions.isEmpty()){
+            fileLocation = directoryPath + slashes + versions.getFirst().getOriginalFilename();
+        }
         if (versions.isEmpty()) {
             JOptionPane.showMessageDialog(frame,"You... don't have any installations. ", "Error", JOptionPane.ERROR_MESSAGE);
             comboBox.removeAllItems();
-            panel.remove(comboBox);
-            panel.revalidate();
-            panel.repaint();
+            button.setEnabled(false);
+            checkBox.setEnabled(false);
+            comboBox.setEnabled(false);
         }
-        JButton button = new JButton("Open this instance of Godot");
-        fileLocation = directoryPath + slashes + versions.getFirst().getOriginalFilename();
         JButton downloads = new  JButton("Download a Specific Godot Version");
 
         comboBox.addActionListener(new ActionListener() {
@@ -201,7 +203,14 @@ public class Main {
         downloads.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
+                JFrame frame = new JFrame("Download Godot Version");
+                frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                frame.setLocationRelativeTo(null);
+                DownloadHandler downloadHandler = new DownloadHandler();
+                frame.add(downloadHandler);
+                downloadHandler.addRow("4.6","rc2");
+                frame.setSize(400, 400);
+                frame.setVisible(true);
             }
         });
 
