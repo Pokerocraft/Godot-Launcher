@@ -1,3 +1,8 @@
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -6,6 +11,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,7 +29,7 @@ public class Main {
     static String user = System.getProperty("user.name");
     static String fileLocation = "";
     static List<GodotVersionInfo> versions = new ArrayList<>();
-    static String latestVersion = "4.5.1 (Stable)";
+    static String latestVersion = "4.6 (Stable)";
     static String latest3Version = "3.6.2 (Stable)";
     static String latestDevVersion = "4.6 (Rc2)";
     static String latest3DevVersion = "3.7 (Dev1)";
@@ -31,10 +37,10 @@ public class Main {
     static String latest1Version = "1.1 (Stable)";
     static String oldestVersion = "1.0 (Stable)";
     static String slashes = System.getProperty("file.separator");
-    /**
-     * Average JFrame stuff, uses {@link #populateComboBox(JComboBox)} to make the comboBox work
-     */
-    public static void main(String[] args) {
+    private static JComboBox<String> comboBox;
+    private static JCheckBox checkBox;
+    private static JPanel panel;
+    public Main() {
         boolean skip = false;
         try{
             String output = "";
@@ -57,11 +63,11 @@ public class Main {
         }
         List<Boolean> hasMono = getMono();
         //Frame and Panel
-        JPanel panel = new JPanel();
+        panel = new JPanel();
         JFrame frame = new JFrame("Godot Launcher");
         //Versions and If the user wants to use the .NET version
-        JComboBox<String> comboBox = new JComboBox();
-        JCheckBox checkBox = new JCheckBox(".NET Version");
+        comboBox = new JComboBox();
+        checkBox = new JCheckBox(".NET Version");
         //Add all the versions. And also disables the CheckBox
         String userHome =  System.getProperty("user.home");
         String directoryPath = userHome + slashes + "GodotPrograms";
@@ -77,7 +83,7 @@ public class Main {
             System.err.println("Failed to make directory: " + e.getMessage());
         }
         if (!skip) {
-            JOptionPane.showMessageDialog(frame, "<html>Having no Stable Versions (Any file that doesn't have _mono in the filename) will crash the engine.<br>Also if you are using a custom engine, such as the Jenova Framework, please change the engine name to fit with the other Godot Versions, so that way my job is easier.<br>Also, in the event that you didn't read the repository description or have no idea what it means: <font color=red> YOU MUST DOWNLOAD YOUR OWN GODOT VERSIONS</font></html>","Info", JOptionPane.INFORMATION_MESSAGE); //Trust me, I don't want to make two more matchers to be able to use the Jenova Framework, renaming a file is easier than this stuff.
+            JOptionPane.showMessageDialog(frame, "<html>If you don't have any standard installations, aka, installations that don't have mono in the filename,<br>this project will think that you have no Godot Installations, and as such, you'll have to download a Standard Edition engine</html>","Info", JOptionPane.INFORMATION_MESSAGE); //Trust me, I don't want to make two more matchers to be able to use the Jenova Framework, renaming a file is easier than this stuff.
             Scanner myScanner = new  Scanner(System.in);
             System.out.println("Do you wish to skip the info box?");
             String result = myScanner.nextLine();
@@ -109,7 +115,7 @@ public class Main {
             fileLocation = directoryPath + slashes + versions.getFirst().getOriginalFilename();
         }
         if (versions.isEmpty()) {
-            JOptionPane.showMessageDialog(frame,"You... don't have any installations. ", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(frame,"Could not find any Standard Installations ", "Error", JOptionPane.ERROR_MESSAGE);
             comboBox.removeAllItems();
             button.setEnabled(false);
             checkBox.setEnabled(false);
@@ -206,10 +212,13 @@ public class Main {
                 JFrame frame = new JFrame("Download Godot Version");
                 frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
                 frame.setLocationRelativeTo(null);
-                DownloadHandler downloadHandler = new DownloadHandler();
-                frame.add(downloadHandler);
-                downloadHandler.addRow("4.6","rc2");
-                frame.setSize(400, 400);
+                frame.setResizable(false);
+                frame.setBackground(new Color(0x357EC7));
+                frame.setSize(500, 400);
+                frame.setLayout(new BorderLayout());
+                DownloadHandler downloadHandler = new DownloadHandler(DownloadListener);
+                loadVersions(downloadHandler);
+                frame.add(downloadHandler, BorderLayout.CENTER);
                 frame.setVisible(true);
             }
         });
@@ -233,7 +242,14 @@ public class Main {
         frame.add(panel);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(400,400);
+        frame.setResizable(false);
         frame.setVisible(true);
+
+    }
+    /**
+     * Average JFrame stuff, uses {@link #populateComboBox(JComboBox)} to make the comboBox work
+     */
+    public static void main(String[] args) {
 
     }
 
@@ -347,4 +363,56 @@ public class Main {
         }
     }
 
+    /**
+     * Loads all available versions on the Godot Page
+     * @param handler A {@link JScrollPane} that handles all the stuff needed for downloading things
+     */
+    public static void loadVersions(DownloadHandler handler){
+        SwingWorker<Void, String[]> worker = new SwingWorker<>(){
+            @Override
+            protected Void doInBackground() throws Exception {
+                Document doc = Jsoup.connect("https://godotengine.org/download/archive/").get();
+                Elements versions = doc.select("h4");
+                for (Element version : versions) {
+                    String fullText = version.text().trim();
+
+                    if (fullText.contains("-")){
+                        String[] parts = fullText.split("-", 2);
+                        String versionNum =  parts[0];
+                        String flavor = parts[1];
+                        publish(new String[]{versionNum, flavor});
+                    }
+                }
+                return null;
+            }
+            protected void process(List<String[]> chunks) {
+                for (String[] data : chunks) {
+                    handler.addRow(data[0], data[1]);
+                }
+                handler.revalidate();
+                handler.repaint();
+            }
+        };
+        worker.execute();
+    }
+
+    public static void refreshVersions() {
+        comboBox.removeAllItems();
+        Path godotFolder = Paths.get(System.getProperty("user.home"),"GodotPrograms");
+        if (Files.exists(godotFolder)) {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(godotFolder)){
+                for (Path entry : stream){
+                    if (Files.isDirectory(entry)){
+                        comboBox.addItem(entry.getFileName().toString());
+
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    public interface DownloadListener{
+        void onDownloadComplete();
+    }
 }
