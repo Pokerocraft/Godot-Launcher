@@ -446,7 +446,7 @@ public class Main {
             if (os.contains("win")) {
                 return name.endsWith(".exe");
             } else if (os.contains("linux")){
-                return (name.contains("x86") || !name.contains(".")) && file.canExecute();
+                return (name.contains("64") || !name.contains(".")) || name.contains("x11");
             }
             return file.canExecute();
         });
@@ -455,6 +455,9 @@ public class Main {
                 String fileName = file.getName().toLowerCase();
                 boolean isMonoExe = fileName.contains("mono");
                 if (useMono == isMonoExe){
+                    if (!os.contains("win")){
+                        file.setExecutable(true,false);
+                    }
                     return  file.getAbsolutePath();
                 }
             }

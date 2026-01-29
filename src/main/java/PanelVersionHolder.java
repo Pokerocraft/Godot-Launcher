@@ -85,12 +85,28 @@ public class PanelVersionHolder extends JPanel {
         new Thread(() -> {
             try {
                 String userHome = System.getProperty("user.home");
-                String zipName = "Godot_v" + versionNum + "-" + flavor + "_win64.exe.zip";
+                String os =  System.getProperty("os.name").toLowerCase();
+                String zipName = "";
+                String slug = "", platform = "";
+                if (os.contains("win")) {
+                    zipName = "Godot_v" + versionNum + "-" + flavor + "_win64.exe.zip";
+                    slug =  "win64.exe.zip";
+                    platform = "windows.64";
+                } else if (os.contains("linux")){
+                    int majorVersion = Integer.parseInt(versionNum.split("\\.")[0]);
+                    if (majorVersion < 4){
+                        slug = "x11.64.zip";
+                    } else {
+                        slug = "linux.x86_64.zip";
+                    }
+                    platform = "linux.64";
+                    zipName = "Gpdot_v"  + versionNum + "-" + flavor + "_linux.x86_64.zip";
+                }
 
                 Path zipPath = Paths.get(userHome, "Downloads", zipName);
                 Path extractDir = Paths.get(userHome, "GodotPrograms", zipName.replace(".zip", ""));
 
-                String downloadUrl = "https://downloads.godotengine.org/?version=" + versionNum + "&flavor=" + flavor + "&slug=win64.exe.zip&platform=windows.64";
+                String downloadUrl = "https://downloads.godotengine.org/?version=" + versionNum + "&flavor=" + flavor + "&slug="+slug+"&platform="+platform+"";
 
                 HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build();
                 HttpRequest request = HttpRequest.newBuilder().uri(URI.create(downloadUrl)).build();
