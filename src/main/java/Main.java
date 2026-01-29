@@ -7,6 +7,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -40,6 +42,8 @@ public class Main {
     private static JComboBox<String> comboBox;
     private static JCheckBox checkBox;
     private static JPanel panel;
+    private static ItemListener comboBoxListener;
+    private static ActionListener comboBoxAction;
     public Main() {
         boolean skip = false;
         try{
@@ -122,10 +126,30 @@ public class Main {
             comboBox.setEnabled(false);
         }
         JButton downloads = new  JButton("Download a Specific Godot Version");
+        comboBoxListener = e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                String selected = (String) comboBox.getSelectedItem();
 
-        comboBox.addActionListener(new ActionListener() {
+                if (selected == null || selected.isEmpty()) return;
+
+                Path selectedPath = Paths.get(System.getProperty("user.home"),"GodotPrograms",  selected);
+                boolean hasDotNet = Files.exists(selectedPath.resolve("GodotSharp"));
+                checkBox.setEnabled(hasDotNet);
+                if (!hasDotNet) {
+                    checkBox.setSelected(false);
+                }
+            }
+        };
+        comboBox.addItemListener(comboBoxListener);
+        comboBoxAction = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                int index = comboBox.getSelectedIndex();
+                if (index == -1) {
+                    return;
+                }
+                Object selected = comboBox.getSelectedItem();
+                if (selected == null) return;
                 String selectedVersion =  (String) comboBox.getSelectedItem();
                 checkBox.setEnabled(selectedVersion != null && hasMono.get(comboBox.getSelectedIndex()));
                 for (int i = 0; i < versions.size(); i++) {
@@ -140,7 +164,9 @@ public class Main {
                     }
                 }
             }
-        });
+        };
+
+        comboBox.addActionListener(comboBoxAction);
 
         checkBox.addActionListener(new ActionListener() {
             @Override
@@ -168,40 +194,26 @@ public class Main {
         button.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try{
-                    String fullPath = "";
-                    if (versions.get(comboBox.getSelectedIndex()).getVersionNumber().contains("Jenova Framework")) {
-                        if (osName.contains("Windows")) {
-                            fullPath = fileLocation + slashes + "godot.windows.editor.x86_64.exe";
-                        }
-                    }
-                    else if (osName.contains("Linux")) {
-                        fullPath = fileLocation + slashes + versions.getFirst().getOriginalFilename() + ".x86_64";
-                    } else {
-                        if (isMonoInstalled(comboBox.getSelectedIndex()) && checkBox.isSelected()) {
-                            String originalVersion = versions.get(comboBox.getSelectedIndex()).getOriginalFilename();
-                            String toInsert = "_mono";
-                            int lastUnderscoreIndex = originalVersion.lastIndexOf("_");
-                            String prefix = originalVersion.substring(0, lastUnderscoreIndex);
-                            int extensionIndex = originalVersion.lastIndexOf(".");
-                            String suffix = originalVersion.substring(lastUnderscoreIndex, extensionIndex);
-                            String newVersion = prefix + toInsert + suffix + ".exe";
-                            fullPath = fileLocation + slashes + newVersion;
-                        } else {
-                            fullPath = fileLocation + slashes + versions.get(comboBox.getSelectedIndex()).getOriginalFilename();
-                        }
+                int index = comboBox.getSelectedIndex();
+                if (index == -1 || index >= versions.size()) return;
+                try {
+                    String folderName = versions.get(index).getOriginalFilename();
+                    boolean wantMono = checkBox.isSelected();
+                    String fullPath= findAppInFolder(folderName, wantMono);
+                    if (fullPath.isEmpty()) {
+                        JOptionPane.showMessageDialog(frame, "Couldn't find the Godot Executable in:\n" + folderName, "Error 404: File Not Found",  JOptionPane.ERROR_MESSAGE);
+                        return;
                     }
                     ProcessBuilder processBuilder = new ProcessBuilder(fullPath);
-
-                    processBuilder.directory(new File(fileLocation));
+                    File workingDir = new  File(directoryPath, folderName);
+                    processBuilder.directory(workingDir);
                     processBuilder.inheritIO();
-
                     Process process = processBuilder.start();
 
-                    int exitCode = process.waitFor();
-                } catch (IOException | InterruptedException ex){
+                    process.waitFor();
+                } catch (IOException | InterruptedException ex) {
                     ex.printStackTrace();
-                    JOptionPane.showMessageDialog(frame, "Whoops, there was an error opening Godot ;-;... \n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(frame, "Error Opening Godot\n"+ ex.getMessage(),"Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -216,7 +228,7 @@ public class Main {
                 frame.setBackground(new Color(0x357EC7));
                 frame.setSize(500, 400);
                 frame.setLayout(new BorderLayout());
-                DownloadHandler downloadHandler = new DownloadHandler(DownloadListener);
+                DownloadHandler downloadHandler = new DownloadHandler(() -> refreshVersions());
                 loadVersions(downloadHandler);
                 frame.add(downloadHandler, BorderLayout.CENTER);
                 frame.setVisible(true);
@@ -250,7 +262,8 @@ public class Main {
      * Average JFrame stuff, uses {@link #populateComboBox(JComboBox)} to make the comboBox work
      */
     public static void main(String[] args) {
-
+        SwingUtilities.invokeLater(() -> {});
+        Main application  = new Main();
     }
 
     /**
@@ -396,22 +409,62 @@ public class Main {
         worker.execute();
     }
 
+    /**
+     * Refreshes the {@link #comboBox} so that the new downloads will work
+     */
     public static void refreshVersions() {
-        comboBox.removeAllItems();
-        Path godotFolder = Paths.get(System.getProperty("user.home"),"GodotPrograms");
-        if (Files.exists(godotFolder)) {
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(godotFolder)){
-                for (Path entry : stream){
-                    if (Files.isDirectory(entry)){
-                        comboBox.addItem(entry.getFileName().toString());
+        comboBox.removeItemListener(comboBoxListener);
+        comboBox.removeActionListener(comboBoxAction);
+        Object currentSelection = comboBox.getSelectedItem();
+        populateComboBox(comboBox);
+        if (currentSelection != null){
+            comboBox.setSelectedItem(currentSelection);
+        }
+        if (isMonoInstalled(comboBox.getSelectedIndex())){
+            checkBox.setEnabled(true);
+        } else {
+            checkBox.setEnabled(false);
+        }
+        comboBox.addItemListener(comboBoxListener);
+        comboBox.addActionListener(comboBoxAction);
+    }
 
-                    }
+    /**
+     * A helper method to help with finding the file name
+     * @param folderName
+     * @param useMono
+     * @return
+     */
+    private static String findAppInFolder(String folderName, boolean useMono){
+        File versionDir = new File(System.getProperty("user.home") + slashes +"GodotPrograms", folderName);
+        if (!versionDir.exists() || !versionDir.isDirectory()){
+            return  "";
+        }
+        String os = System.getProperty("os.name").toLowerCase();
+        File[] files = versionDir.listFiles(file -> {
+            String name = file.getName().toLowerCase();
+            if (os.contains("win")) {
+                return name.endsWith(".exe");
+            } else if (os.contains("linux")){
+                return (name.contains("x86") || !name.contains(".")) && file.canExecute();
+            }
+            return file.canExecute();
+        });
+        if (files != null){
+            for (File file : files){
+                String fileName = file.getName().toLowerCase();
+                boolean isMonoExe = fileName.contains("mono");
+                if (useMono == isMonoExe){
+                    return  file.getAbsolutePath();
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         }
+        return "";
     }
+
+    /**
+     * Interface used to refresh the primary window after a download
+     */
     public interface DownloadListener{
         void onDownloadComplete();
     }

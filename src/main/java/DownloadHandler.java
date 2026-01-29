@@ -19,7 +19,7 @@ public class DownloadHandler extends JScrollPane {
     }
 
     public void addRow(String versionNumber, String flavor){
-        PanelVersionHolder panelVersionHolder = new PanelVersionHolder(versionNumber, flavor);
+        PanelVersionHolder panelVersionHolder = new PanelVersionHolder(versionNumber, flavor, downloadListener);
         panelVersionHolders.add(panelVersionHolder);
         container.add(panelVersionHolder);
         revalidate();
