@@ -1,1 +1,1 @@
-A Very basic Launcher for Godot that uses the Standard Editions of Godot you installed, if you also have the .NET version of a specific version of Godot, you can click the checkbox to instead run the .NET version of Godot.
+This is effectively a basic Java Application where you can easily launch and download (Standard Version Only) versions of Godot, I've tested it and it works well on both Windows and Linux, as tested through a Kubuntu VM.
