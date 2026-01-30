@@ -100,7 +100,7 @@ public class PanelVersionHolder extends JPanel {
                         slug = "linux.x86_64.zip";
                     }
                     platform = "linux.64";
-                    zipName = "Gpdot_v"  + versionNum + "-" + flavor + "_linux.x86_64.zip";
+                    zipName = "Godot_v"  + versionNum + "-" + flavor + "_" +slug;
                 }
 
                 Path zipPath = Paths.get(userHome, "Downloads", zipName);

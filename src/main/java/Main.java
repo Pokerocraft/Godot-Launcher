@@ -44,6 +44,7 @@ public class Main {
     private static JPanel panel;
     private static ItemListener comboBoxListener;
     private static ActionListener comboBoxAction;
+    private static JFrame downloadFrame;
     public Main() {
         boolean skip = false;
         try{
@@ -221,17 +222,19 @@ public class Main {
         downloads.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                JFrame frame = new JFrame("Download Godot Version");
-                frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                frame.setLocationRelativeTo(null);
-                frame.setResizable(false);
-                frame.setBackground(new Color(0x357EC7));
-                frame.setSize(500, 400);
-                frame.setLayout(new BorderLayout());
-                DownloadHandler downloadHandler = new DownloadHandler(() -> refreshVersions());
-                loadVersions(downloadHandler);
-                frame.add(downloadHandler, BorderLayout.CENTER);
-                frame.setVisible(true);
+                 if (downloadFrame == null || !downloadFrame.isVisible()){
+                    downloadFrame = new JFrame("Download Godot Version");
+                    downloadFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                    downloadFrame.setLocationRelativeTo(null);
+                    downloadFrame.setResizable(false);
+                    downloadFrame.setBackground(new Color(0x357EC7));
+                    downloadFrame.setSize(500, 400);
+                    downloadFrame.setLayout(new BorderLayout());
+                    DownloadHandler downloadHandler = new DownloadHandler(() -> refreshVersions());
+                    loadVersions(downloadHandler);
+                    downloadFrame.add(downloadHandler, BorderLayout.CENTER);
+                    downloadFrame.setVisible(true);
+                }
             }
         });
 
@@ -272,6 +275,7 @@ public class Main {
      */
     public static void populateComboBox(JComboBox<String> comboBox) {
         List<String> filenames = new ArrayList<>();
+        versions.clear();
         comboBox.removeAllItems();
         File rootDirectory = new  File(System.getProperty("user.home") + slashes +"GodotPrograms");
 
