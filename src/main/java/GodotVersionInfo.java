@@ -11,7 +11,7 @@ public class GodotVersionInfo {
     private String osName = System.getProperty("os.name");
     private String versionType;
 
-    public static final Pattern WINDOWS_VERSION_PATTERN = Pattern.compile("Godot_v?(\\d+(?:\\.\\d+)*)[-_\\s]?((?:stable|alpha|beta|rc|dev|jenova)[\\d_mono]*)_?[_\\-]win64");
+    public static final Pattern WINDOWS_VERSION_PATTERN =     Pattern.compile("Godot_v?(\\d+(?:\\.\\d+)*)[-_\\s]?((?:stable|alpha|beta|rc|dev|jenova)[\\d]*)(?:_)?(mono)?_?win64");
     public static final Pattern LINUX_VERSION_PATTERN = Pattern.compile("Godot_v?(\\d+(?:\\.\\d+)*)[-_\\s\\.]?((?:stable|alpha|beta|rc|dev|jenova)[\\d_mono\\.]*)_?[_\\-](linux|x11|x86_64|64)");
     /**
      * Constructor to get a specific file
@@ -29,13 +29,11 @@ public class GodotVersionInfo {
         } else {
             matcher = LINUX_VERSION_PATTERN.matcher(filename);
         }
-        if (matcher.find()) {
-            this.versionNumber = matcher.group(1);
-            this.versionType = matcher.group(2);
-        } else {
-            this.versionNumber = "Unknown";
-            this.versionType = "Unknown";
-        }
+       if (matcher.find()){
+           this.versionNumber = matcher.group(1);
+           this.versionType = matcher.group(2).replace("_", "");
+           this.isDotNet = filename.toLowerCase().contains("mono");
+       }
 
         this.isDotNet = filename.contains("_mono");
     }

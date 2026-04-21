@@ -3,7 +3,9 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -18,6 +20,7 @@ import java.util.zip.ZipInputStream;
 public class PanelVersionHolder extends JPanel {
     JLabel label;
     JButton button;
+    JCheckBox monoCheckBox;
     private Main.DownloadListener downloadListener;
     public PanelVersionHolder(Main.DownloadListener downloadListener) {}
 
@@ -51,6 +54,14 @@ public class PanelVersionHolder extends JPanel {
                 download(versionNum, Flavor);
             }
         });
+        monoCheckBox = new JCheckBox(".NET");
+        add(monoCheckBox, gbc);
+        //Disable Button on Startup if Exists
+        Path extractDir = getExtractPath(versionNum, Flavor);
+        if (Files.exists(extractDir)) {
+            button.setEnabled(false);
+            button.setText("It's Already Installed");
+        }
     }
 
     /**
@@ -82,6 +93,7 @@ public class PanelVersionHolder extends JPanel {
      * @param flavor The type of Version it is, such as Stable, Release Candidate, Beta, etc.
      */
     private void download(String versionNum, String flavor) {
+        button.setEnabled(false);
         new Thread(() -> {
             try {
                 String userHome = System.getProperty("user.home");
@@ -102,25 +114,48 @@ public class PanelVersionHolder extends JPanel {
                     platform = "linux.64";
                     zipName = "Godot_v"  + versionNum + "-" + flavor + "_" +slug;
                 }
+                String finalSlug = slug;
+                if (monoCheckBox.isSelected()) {
+                    finalSlug = finalSlug.replace("win64", "mono_win64").replace("linux", "mono_linux");
+                    finalSlug = finalSlug.replace(".exe", "");
+                }
 
                 Path zipPath = Paths.get(userHome, "Downloads", zipName);
                 Path extractDir = Paths.get(userHome, "GodotPrograms", zipName.replace(".zip", ""));
 
-                String downloadUrl = "https://downloads.godotengine.org/?version=" + versionNum + "&flavor=" + flavor + "&slug="+slug+"&platform="+platform+"";
-
+                String downloadUrl = "https://downloads.godotengine.org/?version=" + versionNum + "&flavor=" + flavor + "&slug="+finalSlug+"&platform="+platform+"";
                 HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build();
                 HttpRequest request = HttpRequest.newBuilder().uri(URI.create(downloadUrl)).build();
 
-                client.send(request, HttpResponse.BodyHandlers.ofFile(zipPath));
+//                client.send(request, HttpResponse.BodyHandlers.ofFile(zipPath));
+                HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+                long fileSize = response.headers().firstValueAsLong("Content-Length").orElse(-1L);
+                try (InputStream is = response.body()) {
+                    FileOutputStream fos = new FileOutputStream(zipPath.toFile());
+                    byte[] buffer = new byte[8192];
+                    long totalBytesRead = 0;
+                    int bytesRead;
+                    while ((bytesRead = is.read(buffer)) != -1) {
+                        fos.write(buffer, 0, bytesRead);
+                        totalBytesRead += bytesRead;
+                        if (fileSize > 0){
+                            int percent = (int) ((totalBytesRead * 100) / fileSize);
+                            SwingUtilities.invokeLater(() -> {
+                                button.setText("Downloading... " + percent + "%");
+                            });
+                        }
+                    }
+                    fos.close();
+                }
                 unzip(zipPath, extractDir);
                 Files.deleteIfExists(zipPath);
                 SwingUtilities.invokeLater(() -> {
                     if (this.downloadListener != null) {
                         this.downloadListener.onDownloadComplete();
+                    button.setText("It's been installed");
+                    button.setEnabled(false);
                     }
-                    button.setText("Download");
-                    button.setEnabled(true);
-                    JOptionPane.showMessageDialog(null, "Download Successful");
+                    JOptionPane.showMessageDialog(null, "Your Download Succeeded. I recommend restarting the program, as elsewise, the editor won't run from here,");
                 });
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -146,5 +181,13 @@ public class PanelVersionHolder extends JPanel {
         if (flavor.startsWith("beta")) return "Beta " + flavor.substring(4);
         if (flavor.startsWith("dev")) return "Dev Build " + flavor.substring(3);
         return flavor;
+    }
+
+    private Path getExtractPath(String versionNum, String flavor) {
+        String os =  System.getProperty("os.name").toLowerCase();
+        String slug = os.contains("win") ? "win64.exe.zip" :
+                (Integer.parseInt(versionNum.split("\\.")[0])< 4 ? "x11.64.zip": "linux.x86_64.zip");
+        String folderName = "Godot_v"+ versionNum + "-" + flavor + "_" + slug.replace(".zip", "");
+        return Paths.get(System.getProperty("user.home"), "GodotPrograms", folderName);
     }
 }

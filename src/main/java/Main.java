@@ -31,9 +31,9 @@ public class Main {
     static String user = System.getProperty("user.name");
     static String fileLocation = "";
     static List<GodotVersionInfo> versions = new ArrayList<>();
-    static String latestVersion = "4.6.1 (Stable)";
+    static String latestVersion = "4.6.2 (Stable)";
     static String latest3Version = "3.6.2 (Stable)";
-    static String latestDevVersion = "4.7 (Dev1)";
+    static String latestDevVersion = "4.7 (Dev5)";
     static String latest3DevVersion = "3.7 (Dev1)";
     static String latest2Version = "2.1.6 (Stable)";
     static String latest1Version = "1.1 (Stable)";
@@ -45,11 +45,12 @@ public class Main {
     private static ItemListener comboBoxListener;
     private static ActionListener comboBoxAction;
     private static JFrame downloadFrame;
+    static JButton button = new JButton("Open this instance of Godot");
     public Main() {
         boolean skip = false;
         try{
             String output = "";
-            File askingFile = new File("src/main/java/donutAskAgain.txt");
+            File askingFile = new File("src/main/java/dontAskAgain.txt");
             int i = 0;
             Scanner myReader = new Scanner(askingFile);
             String data;
@@ -115,7 +116,7 @@ public class Main {
                 JOptionPane.showMessageDialog(frame, "You likely only have .NET installations, which requires the Stable version in order to run..", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
-        JButton button = new JButton("Open this instance of Godot");
+
         if (!versions.isEmpty()){
             fileLocation = directoryPath + slashes + versions.getFirst().getOriginalFilename();
         }
@@ -146,7 +147,7 @@ public class Main {
             @Override
             public void actionPerformed(ActionEvent e) {
                 int index = comboBox.getSelectedIndex();
-                if (index == -1) {
+                if (index < 0|| index >= versions.size()) {
                     return;
                 }
                 Object selected = comboBox.getSelectedItem();
@@ -314,15 +315,6 @@ public class Main {
     }
 
     /**
-     * Checks to see if the .NET version is installed for a version at a specific index
-     * @param index Because isMonoInstalled runs {@link #getMono() getMono().get(index)}, it uses a specified index to check if that specific version of Godot has the .NET version installed.
-     * @return Returns true if a specific index of {@link #getMono()} is true.
-     */
-    public static boolean isMonoInstalled(int index){
-        return getMono().get(index);
-    }
-
-    /**
      * Checks all versions to see if the .NET version of Godot is also installed
      * @return Returns a list of booleans regarding which version also has the .NET version installed.
      */
@@ -367,12 +359,12 @@ public class Main {
     }
 
     /**
-     * Pretty much writes to a file called donutAskAgain.txt, it pretty much just saves if you decided to not want to see the popup about how you must download your own files
+     * Pretty much writes to a file called dontAskAgain.txt, it pretty much just saves if you decided to not want to see the popup about how you must download your own files
      * @param dontAsk
      */
     public static void writeToFile(boolean dontAsk){
         try{
-            FileWriter myWriter = new FileWriter("src/main/java/donutAskAgain.txt");
+            FileWriter myWriter = new FileWriter("src/main/java/dontAskAgain.txt");
             myWriter.write(String.valueOf(dontAsk));
             myWriter.close();
         } catch (IOException ex) {
@@ -417,20 +409,23 @@ public class Main {
      * Refreshes the {@link #comboBox} so that the new downloads will work
      */
     public static void refreshVersions() {
+        //Temporarily disable Listeners
         comboBox.removeItemListener(comboBoxListener);
         comboBox.removeActionListener(comboBoxAction);
-        Object currentSelection = comboBox.getSelectedItem();
+
+        comboBox.removeAllItems();
+        //Repopulate static versions list
         populateComboBox(comboBox);
-        if (currentSelection != null){
-            comboBox.setSelectedItem(currentSelection);
-        }
-        if (isMonoInstalled(comboBox.getSelectedIndex())){
-            checkBox.setEnabled(true);
-        } else {
-            checkBox.setEnabled(false);
-        }
-        comboBox.addItemListener(comboBoxListener);
-        comboBox.addActionListener(comboBoxAction);
+       if (versions.isEmpty()) {
+           button.setEnabled(false);
+           checkBox.setEnabled(false);
+       } else {
+           button.setEnabled(true);
+           comboBox.setSelectedIndex(0);
+           checkBox.setSelected(isMonoInstalled(0));
+       }
+       comboBox.addItemListener(comboBoxListener);
+       comboBox.addActionListener(comboBoxAction);
     }
 
     /**
@@ -474,5 +469,23 @@ public class Main {
      */
     public interface DownloadListener{
         void onDownloadComplete();
+    }
+
+    /**
+     * Simplified Check to see if a .NET version is installed.
+     * @param index Where you're at in the ComboBox
+     * @return Returns if there is a Mono Version Installed.
+     */
+    public static boolean isMonoInstalled(int index) {
+        if (index <0 || index >= versions.size()){
+            return false;
+        }
+        String currentFolder = versions.get(index).getOriginalFilename();
+        if (currentFolder.contains("mono")){
+            return true;
+        }
+        String monoFolderName = currentFolder.replace("_win64", "_mono_win64").replace("_linux", "_mono_linux");
+        Path monoPath = Paths.get(System.getProperty("user.home"), "GodotPrograms", monoFolderName);
+        return Files.exists(monoPath);
     }
 }

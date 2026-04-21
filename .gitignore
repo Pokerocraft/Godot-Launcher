@@ -37,7 +37,6 @@ build/
 ### Mac OS ###
 .DS_Store
 ### Launcher ###
-!**/src/main/java/donutAskAgain.txt
-/src/main/java/donutAskAgain.txt
+!**/src/main/java/dontAskAgain.txt
 /out/artifacts/GodotLauncher_jar/GodotLauncher.jar
 /src/main/resources/META-INF/MANIFEST.MF
